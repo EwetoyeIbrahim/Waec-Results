@@ -32,13 +32,8 @@ metrics = waec_data.METRICS.unique() # Criteria to access
 gender = waec_data.GENDER.unique() # Either MALE or FEMALE
 locations = waec_data.columns[4:] # the list of all states with the addition ABUJA, NIGERIA & OFFSHORE
 
-#----------------------------------------------------------------
-'''
-states_food_prices=states_food_data.copy()
-item_list = states_food_prices.ItemLabels.unique()
-data_months = list(states_food_prices.columns)[2:]
-state_list = states_food_prices.States.unique()
-'''
+tabl_header = ["Metric","Male","Female","Total"]
+
 #----------------------------------------------------------------
 #setting the template variables
 with open(os.path.join(basedir,'assets','side_bar.html')) as f:
@@ -58,54 +53,62 @@ app.index_string = public_helpers.dashboard_template(page_title='Nigeria WAEC Re
 
 
 app.layout = html.Div(
-    className="row",
+    className="container-fluid row",
     children=[
         
         #------------- The left side of the screen -----------#
         html.Div(
             className="col-xs-12 col-sm-6",
+            style={"border": "5px solid white","backgroundColor":"grey", "borderRadius":"20px", "paddingBottom":"20px"},
             children= [
-                dcc.Dropdown(
-                    #id='left_metrics',
-                    options=[{'label': i, 'value': i} for i in metrics],
-                    value="5 CREDITS & ABOVE INCLUDING MATHEMATICS & ENGLISH LANG."
-                ),
                 html.Div(
-                    className="col-xs-8",
-                    style={"padding":"0","padding-top":"15px"},
+                    className="col-xs-6 col-sm-7",
+                    style={"padding":"0","paddingTop":"15px"},
                     children= [
                         dcc.Dropdown(
-                            #id='left_location',
-                            options=[{'label': i, 'value': i} for i in locations],
-                            value=['NIGERIA']
+                            id='left_location',
+                            options=[{'label': f'Location: {i}', 'value': i} for i in locations],
+                            value='NIGERIA'
                         ),
                         dcc.Dropdown(
-                            #id='left_type',
-                            options=[{'label': i, 'value': i} for i in school_type],
-                            value=['PRIVATE']
+                            id='left_type',
+                            options=[{'label': f'School Type: {i}', 'value': i} for i in school_type],
+                            value='PRIVATE'
+                        ),
+                        dcc.Dropdown(
+                            id='left_year',
+                            options=[{'label': f'Year: {i}', 'value': i} for i in years],
+                            value= 2018
                         ),
                     ],
                 ),
                 html.Img(
-                    className="col-xs-4",
-                    style={"width":"100px","padding":"10px", "border-radius": "50%","float":"right"},
+                    className="col-xs-6 col-sm-5",
+                    style={"width":"130px","maxWidth":"100%","padding":"10px", "borderRadius": "50%","float":"right"},
                     src=app.get_asset_url("Private Result.jpg")
                 ),
                 #for year in years:
-                dash_table.DataTable(
-                    #id='left_table',
-                    columns=[
-                        {"name":"Metric","id": "metric"},
-                        {"name":"Male","id": "Male"},
-                        {"name":"Female","id": "Female"},
-                        {"name":"Total","id": "Total"},
-                    ],
-                    style_header={
-                        'backgroundColor':'rgb(230,230,230)',
-                        'fontWeight':'bold',
-                        'textAlign':'center',
-                    }
-                ),
+                
+                html.Div(
+                    style={"clear":"both"},
+                    children=[dcc.Store(id='memory-output'),
+                    html.Div(id="table-container"),
+                    html.Div(
+                        className="table-responsive",
+                        children= dash_table.DataTable(
+                            id='left_table',
+                            columns=[{"name":i,"id": i,"selectable": True} for i in tabl_header],
+                            style_cell={
+                                # all three widths are needed
+                                'height': 'auto',
+                                'minWidth': '100px', 'width':'100px','maxWidth': '180px',
+                                'whiteSpace': 'normal'
+                            },
+                            sort_action="native",
+                            page_action="native",
+                        ),
+                    ),
+                ]), 
             ],    
         ),
         
@@ -114,43 +117,121 @@ app.layout = html.Div(
         #-------- The right side of the screen-----------#
         html.Div(
             className="col-xs-12 col-sm-6",
+            style={"border": "5px solid white","backgroundColor":"grey", "borderRadius":"20px", "paddingBottom":"20px"},
+                    
             children= [
-                dcc.Dropdown(
-                    #id='right_metrics',
-                    options=[{'label': i, 'value': i} for i in metrics],
-                    value="5 CREDITS & ABOVE INCLUDING MATHEMATICS & ENGLISH LANG."
-                ),
-                
                 html.Img(
-                    className="col-xs-4",
-                    style={"width":"100px","padding":"10px", "border-radius": "50%"},
+                    className="col-xs-6 col-sm-5",
+                    style={"width":"130px","maxWidth":"100%","padding":"10px", "borderRadius": "50%"},
                     src=app.get_asset_url("Public Result2.jpg")
                 ),
                 html.Div(
-                    className="col-xs-8",
-                    style={"padding":"0","margin":"0px", "padding-top":"15px","float":"right"},
+                    className="col-xs-6 col-sm-7",
+                    style={"padding":"0","paddingTop":"15px","float":"right"},
                     children= [
                         dcc.Dropdown(
-                            #id='right_location',
-                            options=[{'label': i, 'value': i} for i in locations],
-                            value=['NIGERIA']
+                            id='right_location',
+                            options=[{'label': f'Location: {i}', 'value': i} for i in locations],
+                            value='OGUN'
                         ),
                         dcc.Dropdown(
-                            #id='right_type',
-                            options=[{'label': i, 'value': i} for i in school_type],
-                            value=['PUBLIC']
+                            id='right_type',
+                            options=[{'label': f'School Type: {i}', 'value': i} for i in school_type],
+                            value='PUBLIC'
+                        ),
+                        dcc.Dropdown(
+                            id='right_year',
+                            options=[{'label': f'Year: {i}', 'value': i} for i in years],
+                            value='2018'
                         ),
                     ],
                 ),
+                html.Div(
+                    style={"clear":"both"},
+                    children=[dcc.Store(id='r-memory-output'),
+                    html.Div(id="r-table-container"),
+                    html.Div(
+                        className="table-responsive",
+                        children= dash_table.DataTable(
+                            id='right_table',
+                            columns=[{"name":i,"id": i,"selectable": True} for i in tabl_header],
+                            style_cell={
+                                # all three widths are needed
+                                'height': 'auto',
+                                'minWidth': '100px', 'width':'100px','maxWidth': '180px',
+                                'whiteSpace': 'normal'
+                            },
+                            sort_action="native",
+                            page_action="native",
+                        ),
+                    ),
+                ]), 
             ],
-        ),        
-        
-        
-        
-        
-        
+        ),  
     ],
 )
+
+def metric_compute(location,year,school_type):
+    '''Here, I generate the cell values'''
+    year = int(year)
+    #print(waec_data)
+    state_waec = waec_data[["YEAR","SCHOOL_TYPE","METRICS","GENDER",location]] #Area of interest
+    #getting the needed sell figures based on the selected year and school type
+    state_data = state_waec[(state_waec.YEAR==int(year)) & (state_waec["SCHOOL_TYPE"]==school_type)][location].to_list()
+    value =[] # initializing the cell value list
+    for i in range(len(state_data)):
+        figure = int(state_data[i])
+        if i%2!=1: # One total value for two consecutive elements
+            total = int(state_data[i]+state_data[i+1])
+            cell_value = f'{figure} ({figure/total * 100:.1f}%)'
+            value = value+[cell_value]
+        else:
+            cell_value = f'{figure} ({figure/total * 100:.1f}%)'
+            value = value+[cell_value]+[total]
+    tab_val = [{tabl_header[0]:metrics[i],tabl_header[1]:value[i*3],
+                tabl_header[2]:value[i*3+1],tabl_header[3]:value[i*3+2]} for i in range(len(metrics))]
+    return tab_val
+
+#----Handling Left portion stuffs
+
+@app.callback(dash.dependencies.Output('memory-output', 'data'),
+              [dash.dependencies.Input('left_location', 'value'),
+               dash.dependencies.Input('left_year','value'),
+               dash.dependencies.Input('left_type', 'value')],
+               [dash.dependencies.State('memory-output', 'data')]
+)
+def store_data(left_location,left_year,left_type, storage):
+    data = metric_compute(left_location,left_year,left_type)
+    return data
+
+
+@app.callback(dash.dependencies.Output('left_table', 'data'),
+              [dash.dependencies.Input('memory-output', 'data')])
+def update_left_table(data):
+    if data is None:
+        raise dash.exceptions.PreventUpdate
+    return data
+
+#----Handling Right portion stuffs
+
+@app.callback(dash.dependencies.Output('r-memory-output', 'data'),
+              [dash.dependencies.Input('right_location', 'value'),
+               dash.dependencies.Input('right_year','value'),
+               dash.dependencies.Input('right_type', 'value')],
+               [dash.dependencies.State('r-memory-output', 'data')]
+)
+def r_store_data(right_location,right_year,right_type, storage):
+    data = metric_compute(right_location,right_year,right_type)
+    return data
+
+
+@app.callback(dash.dependencies.Output('right_table', 'data'),
+              [dash.dependencies.Input('r-memory-output', 'data')])
+def update_right_table(data):
+    if data is None:
+        raise dash.exceptions.PreventUpdate
+    return data
+
         
 if __name__ == '__main__':
     app.run_server(debug=True)
