@@ -1,5 +1,6 @@
 import sys
 import os
+from math import isnan
 # Getting the base directory ensures that my resources are mobile
 # especially in this development mode that I am yet to finalize the structure
 basedir=os.path.abspath(os.path.dirname(__file__))
@@ -18,16 +19,14 @@ import plotly.graph_objs as go
 import plotly.tools as tls
 #-----------------------------------------------------------
  
-external_stylesheets = ["https://fonts.googleapis.com/icon?family=Material+Icons","https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css"]
-app = dash.Dash(__name__, external_stylesheets=external_stylesheets)#,requests_pathname_prefix='/Waec_Statistics/')
-app.scripts.config.serve_locally = True
 
 read_waec_data = pd.read_csv(os.path.join(basedir,'assets','Waec_2016_2018.csv')) # Loading the merged prices
 #---------------------------------------------------------------
 #Defining The variables
 waec_data = read_waec_data.copy() # The full sheet, copied to preserve the original version
 years = waec_data.YEAR.unique() # Available WAEC exam data years
-school_type = waec_data.SCHOOL_TYPE.unique() #Either PRIVATE or PUBLIC
+school_type = list(waec_data.SCHOOL_TYPE.unique()) #Either PRIVATE, PUBLIC
+school_type.append("ALL") # Add ALL to the selection,
 metrics = waec_data.METRICS.unique() # Criteria to access
 gender = waec_data.GENDER.unique() # Either MALE or FEMALE
 locations = waec_data.columns[4:] # the list of all states with the addition ABUJA, NIGERIA & OFFSHORE
@@ -39,6 +38,9 @@ tabl_header = ["Metric","Male","Female","Total"]
 with open(os.path.join(basedir,'assets','side_bar.html')) as f:
     sidebar_content = f.read()
     
+external_stylesheets = ["https://fonts.googleapis.com/icon?family=Material+Icons","https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css"]
+app = dash.Dash(__name__, external_stylesheets=external_stylesheets)#,requests_pathname_prefix='/Waec_Statistics/')
+app.scripts.config.serve_locally = True
 app.index_string = public_helpers.dashboard_template(page_title='Nigeria WAEC Results Statistics',
                          page_subtitle='<strong class="green">Analyzing 2016 - 2018 Data</strong>',
                          meta_tag='Nigeria WAEC Results Data Analysis',
@@ -79,20 +81,17 @@ app.layout = html.Div(
                             id='left_year',
                             options=[{'label': f'Year: {i}', 'value': i} for i in years],
                             value= 2018
-                        ),
-                    ],
+                        ),],
                 ),
                 html.Img(
                     className="col-xs-6 col-sm-5",
                     style={"width":"130px","maxWidth":"100%","padding":"10px", "borderRadius": "50%","float":"right"},
                     src=app.get_asset_url("Private Result.jpg")
                 ),
-                #for year in years:
                 
-                html.Div(
+                html.Div( #Left Table
                     style={"clear":"both"},
                     children=[dcc.Store(id='memory-output'),
-                    html.Div(id="table-container"),
                     html.Div(
                         className="table-responsive",
                         children= dash_table.DataTable(
@@ -107,13 +106,10 @@ app.layout = html.Div(
                             sort_action="native",
                             page_action="native",
                         ),
-                    ),
-                ]), 
-            ],    
+                    ),],
+                ),],    
         ),
         
-        
-
         #-------- The right side of the screen-----------#
         html.Div(
             className="col-xs-12 col-sm-6",
@@ -143,13 +139,12 @@ app.layout = html.Div(
                             id='right_year',
                             options=[{'label': f'Year: {i}', 'value': i} for i in years],
                             value='2018'
-                        ),
-                    ],
+                        ),],
                 ),
-                html.Div(
+                
+                html.Div( #Left Table
                     style={"clear":"both"},
                     children=[dcc.Store(id='r-memory-output'),
-                    html.Div(id="r-table-container"),
                     html.Div(
                         className="table-responsive",
                         children= dash_table.DataTable(
@@ -164,33 +159,47 @@ app.layout = html.Div(
                             sort_action="native",
                             page_action="native",
                         ),
-                    ),
-                ]), 
-            ],
-        ),  
-    ],
+                    ),],
+                ),],
+        ),],
 )
-
-def metric_compute(location,year,school_type):
+        
+def data_need(location,year,select_type):
     '''Here, I generate the cell values'''
     year = int(year)
     #print(waec_data)
     state_waec = waec_data[["YEAR","SCHOOL_TYPE","METRICS","GENDER",location]] #Area of interest
-    #getting the needed sell figures based on the selected year and school type
-    state_data = state_waec[(state_waec.YEAR==int(year)) & (state_waec["SCHOOL_TYPE"]==school_type)][location].to_list()
-    value =[] # initializing the cell value list
-    for i in range(len(state_data)):
+    #getting the needed cells based on the selected year and school type
+    if select_type != school_type[2]: #Use both public and private if ALL is selected
+        #print(school_type, "of type ", type(school_type))
+        print(select_type)
+        state_waec = state_waec[state_waec.SCHOOL_TYPE==select_type]
+    #state_data = state_waec[state_waec.YEAR==int(year)][location].to_list()
+    state_data = state_waec[state_waec.YEAR==int(year)].groupby(["METRICS","GENDER"],sort=False,as_index=False).sum()[location].to_list()
+    print(school_type)
+    print("------")
+    print(state_data)
+    return(state_data)
+    
+def metric_compute(state_data):
+    if isnan(state_data[0]):
+        return [{tabl_header[0]:metrics[i],tabl_header[1]:'-', 
+            tabl_header[2]:'-',tabl_header[3]:'-'} for i in range(len(metrics))]
+    state_total_sat=state_data[0]+state_data[1]
+    value =[state_data[0],state_data[1],state_total_sat] # initializing the cell value list
+    for x in range(len(state_data)-2):
+        i=x+2
         figure = int(state_data[i])
         if i%2!=1: # One total value for two consecutive elements
-            total = int(state_data[i]+state_data[i+1])
-            cell_value = f'{figure} ({figure/total * 100:.1f}%)'
+            total = f'{int(state_data[i]+state_data[i+1])} ({(state_data[i]+state_data[i+1])/state_total_sat * 100:.1f}%)'
+            cell_value = f'{figure} ({figure/value[0] * 100:.1f}%)'
             value = value+[cell_value]
         else:
-            cell_value = f'{figure} ({figure/total * 100:.1f}%)'
+            cell_value = f'{figure} ({figure/value[1] * 100:.1f}%)'
             value = value+[cell_value]+[total]
-    tab_val = [{tabl_header[0]:metrics[i],tabl_header[1]:value[i*3],
-                tabl_header[2]:value[i*3+1],tabl_header[3]:value[i*3+2]} for i in range(len(metrics))]
-    return tab_val
+    print(value)
+    return [{tabl_header[0]:metrics[i],tabl_header[1]:value[i*3],
+        tabl_header[2]:value[i*3+1],tabl_header[3]:value[i*3+2]} for i in range(len(metrics))]
 
 #----Handling Left portion stuffs
 
@@ -200,9 +209,9 @@ def metric_compute(location,year,school_type):
                dash.dependencies.Input('left_type', 'value')],
                [dash.dependencies.State('memory-output', 'data')]
 )
-def store_data(left_location,left_year,left_type, storage):
-    data = metric_compute(left_location,left_year,left_type)
-    return data
+def l_store_data(left_location,left_year,left_type, storage):
+    data_of_interest = data_need(left_location,left_year,left_type)
+    return data_of_interest
 
 
 @app.callback(dash.dependencies.Output('left_table', 'data'),
@@ -210,7 +219,7 @@ def store_data(left_location,left_year,left_type, storage):
 def update_left_table(data):
     if data is None:
         raise dash.exceptions.PreventUpdate
-    return data
+    return metric_compute(data)
 
 #----Handling Right portion stuffs
 
@@ -221,18 +230,16 @@ def update_left_table(data):
                [dash.dependencies.State('r-memory-output', 'data')]
 )
 def r_store_data(right_location,right_year,right_type, storage):
-    data = metric_compute(right_location,right_year,right_type)
-    return data
-
+    data_of_interest = data_need(right_location,right_year,right_type)
+    return data_of_interest
 
 @app.callback(dash.dependencies.Output('right_table', 'data'),
               [dash.dependencies.Input('r-memory-output', 'data')])
 def update_right_table(data):
     if data is None:
         raise dash.exceptions.PreventUpdate
-    return data
+    return metric_compute(data)
 
         
 if __name__ == '__main__':
     app.run_server(debug=True)
-    
