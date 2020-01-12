@@ -1,28 +1,18 @@
-import sys
-import os
-from math import isnan
-# Getting the base directory ensures that my resources are mobile
-# especially in this development mode that I am yet to finalize the structure
-basedir=os.path.abspath(os.path.dirname(__file__))
-#sys.path.append(basedir) #When shred resources is within this folder
-sys.path.append(os.path.join(basedir,os.path.pardir)) # when outside this folder
-from _shared_res import public_helpers as public_helpers
-
-import textwrap
-#-----------------------------------------------------------
-import dash
+import sys, os; from math import isnan #Required In-builts
+#---Third-party---------------
+import dash, dash_table
 import dash_core_components as dcc
 import dash_html_components as html
-import dash_table
 import pandas as pd
 import plotly.graph_objs as go
-import plotly.tools as tls
-#-----------------------------------------------------------
- 
+from textwrap import dedent
+#-----------------------------
+# Getting the base directory ensures that my resources are mobile
+basedir=os.path.abspath(os.path.dirname(__file__))
+from shared_res import public_helpers as public_helpers
 
+#---Defining The data and its variables-------------------
 read_waec_data = pd.read_csv(os.path.join(basedir,'assets','Waec_2016_2018.csv')) # Loading the merged prices
-#---------------------------------------------------------------
-#Defining The variables
 waec_data = read_waec_data.copy() # The full sheet, copied to preserve the original version
 years = list(waec_data.YEAR.unique()) # Available WAEC exam data years
 school_type = list(waec_data.SCHOOL_TYPE.unique()) #Either PRIVATE, PUBLIC
@@ -30,25 +20,23 @@ school_type.append("ALL") # Add ALL to the selection,
 metrics = list(waec_data.METRICS.unique()) # Criteria to access
 gender = list(waec_data.GENDER.unique()) # Either MALE or FEMALE
 locations = waec_data.columns[4:] # the list of all states with the addition ABUJA, NIGERIA & OFFSHORE
-
 tabl_header = ["Metric","Male","Female","Total"]
 
-#----------------------------------------------------------------
-#setting the template variables
-colors={
-        'graph_bg' : "white",
-        'text' : "grey",
-        'board_color': 'grey',
-    }
+#----Setting the template and its variables------------------------------------------
+colors={'graph_bg' : "white", 'text' : "grey", 'board' : 'grey',
+        'board_border' : "5px solid white",}
+# Putting the side bar inplace
 with open(os.path.join(basedir,'assets','side_bar.html')) as f:
     sidebar_content = f.read()
-    
-external_stylesheets = ["https://fonts.googleapis.com/icon?family=Material+Icons","https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css"]
-app = dash.Dash(__name__, external_stylesheets=external_stylesheets)#,requests_pathname_prefix='/Waec_Statistics/')
+#external_stylesheets = ["https://fonts.googleapis.com/icon?family=Material+Icons",
+#                        "https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"]
+app = dash.Dash(__name__,)
+                # external_stylesheets=external_stylesheets,
+                # requests_pathname_prefix='/Waec_Statistics/')
 app.scripts.config.serve_locally = True
 app.index_string = public_helpers.dashboard_template(page_title='Nigeria WAEC Results Statistics',
                          page_subtitle='<strong>Analyzing 2016 - 2018 Data</strong>',
-                         meta_tag='Nigeria WAEC Results Data Analysis',
+                         meta_tag='Nigeria WAEC results data visualization',
                          header_img_path='assets/Equimolar_white_s.png',
                          header_img_alt='Nigeria Food Prices',
                          links_to_related_files = '',
@@ -56,20 +44,26 @@ app.index_string = public_helpers.dashboard_template(page_title='Nigeria WAEC Re
                          sidebar_content= sidebar_content,
                          list_of_recent_visuals='',
                          )
-#-----------------------------------------------------------------
+#---The Dashboard and its Constituence-----------------------------
 
 app.layout = html.Div(
-    className="container-fluid row",
-    children=[
-        
+    className="row",
+    children=[        
         #------------- The left side of the screen -----------#
         html.Div(
-            className="col-xs-12 col-sm-6",
-            style={"border": "5px solid white","backgroundColor":"grey", 
+            className="col-12 col-md-6",
+            style={"border": colors['board_border'],"backgroundColor":colors['board'], 
                 "borderRadius":"20px", "paddingBottom":"20px"},
             children= [
+                
+                html.Img(
+                    className="col-6 col-xl-5",
+                    style={"width":"130px","maxWidth":"100%",
+                        "padding":"10px", "borderRadius": "50%","float":"right"},
+                    src=app.get_asset_url("Private Result.jpg")
+                ),
                 html.Div(
-                    className="col-xs-6 col-sm-7",
+                    className="col-6 col-xl-7",
                     style={"padding":"0","paddingTop":"15px"},
                     children= [
                         dcc.Dropdown(
@@ -88,12 +82,6 @@ app.layout = html.Div(
                             value= 2018
                         ),
                     ],
-                ),
-                html.Img(
-                    className="col-xs-6 col-sm-5",
-                    style={"width":"130px","maxWidth":"100%",
-                        "padding":"10px", "borderRadius": "50%","float":"right"},
-                    src=app.get_asset_url("Private Result.jpg")
                 ),
                 #----------------------------------------------------------
                 html.Div(
@@ -117,32 +105,30 @@ app.layout = html.Div(
                     ),
                 ),
                 html.Div(#The summary section
-                    className="col-xs-12", 
+                    className="col-12", 
                     style={"padding-top":"20px"},
                     children= [
                         dcc.Markdown(id='l-summary-txt'),
-                        ],
+                    ],
                 ), 
             ],    
         ),
         
-        
-
         #-------- The right side of the screen-----------#
         html.Div(
-            className="col-xs-12 col-sm-6 hidden-xs",
-            style={"border": "5px solid white","backgroundColor":colors['board_color'], "borderRadius":"20px",
+            className="col-12 col-sm-6 d-none d-md-block",
+            style={"border": colors['board_border'],"backgroundColor":colors['board'], "borderRadius":"20px",
                 "paddingBottom":"20px"},
                     
             children= [
                 html.Img(
-                    className="col-xs-6 col-sm-5",
+                    className="col-6 col-xl-5",
                     style={"width":"130px","maxWidth":"100%","padding":"10px", 
                         "borderRadius": "50%"},
-                    src=app.get_asset_url("Public Result2.jpg")
+                    src=app.get_asset_url("Public Result.jpg")
                 ),
                 html.Div(
-                    className="col-xs-6 col-sm-7",
+                    className="col-6 col-xl-7",
                     style={"padding":"0","paddingTop":"15px","float":"right"},
                     children= [
                         dcc.Dropdown(
@@ -183,7 +169,7 @@ app.layout = html.Div(
                     ),
                 ),
                 html.Div(#The summary section
-                    className="col-xs-12", 
+                    className="col-12", 
                     style={"padding-top":"20px"},
                     children= [
                         dcc.Markdown(id='r-summary-txt'),
@@ -194,9 +180,12 @@ app.layout = html.Div(
     ],
 )
 
-        
+# --- The functions called within the callbacks -----------------      
 def data_need(location,year,select_type):
-    '''Here, I generate the cell values'''
+    '''Here, two outputs were generated
+    state_waec: The full dataframe for the selected location, consumed by update_graphs
+    state_data: The list of state_waec figures used by metric_compute to generate table cells
+    '''
     year = int(year)
     state_waec = waec_data[["YEAR","SCHOOL_TYPE","METRICS","GENDER",location]] #Area of interest
     #getting the needed cells based on the selected year and school type
@@ -211,7 +200,11 @@ def data_need(location,year,select_type):
     return  state_waec, state_data
 
 def metric_compute(location,year,school_type):
-    '''Here, I generate the cell values'''
+    '''Here, I generated three outputs
+    output_data: The table cell values
+    summary_txt: A short summary message generated by calling summary_Txt function
+    state_waec: The full dataframe for the selected location, consumed by update_graphs
+    '''
     state_waec, state_data = data_need(location,year,school_type)
     #print(state_data)
     if isnan(state_data[0]):
@@ -240,11 +233,12 @@ def metric_compute(location,year,school_type):
     return output_data, summary_txt, state_waec
 
 def summary_Txt(location,year,school_type,state_data,value):
+    # Generated Markdown text for the summary portion of the view
     if school_type=='all':
         sat__with=' for the examination'
     else:
         sat__with='as '+ school_type + ' schools students'
-    summary_txt = textwrap.dedent(f'''
+    summary_txt = dedent(f'''
         #### Summary: {location} | {year} | {school_type.capitalize()} Schools
         ----------------------
         The West African Examinations Council Results Statistics of **{year}** 
@@ -265,30 +259,21 @@ def summary_Txt(location,year,school_type,state_data,value):
     return summary_txt
 
 def update_graphs(location,state_waec,school_type):
+    '''This function concocts the graph'''
     need_metric = ["TOTAL NUMBER SAT", "5 CREDITS & ABOVE INCLUDING MATHEMATICS & ENGLISH LANG."]
     state_waec2=state_waec[
         (state_waec.METRICS==need_metric[0]) | 
         (state_waec.METRICS==need_metric[1])
     ]
-
-    #x=["TOTAL...", "5 CREDITS..."]
-    #names = list(gender)
     num_val=state_waec2[state_waec2.columns[-1]].to_list()
     
     fig1 =[go.Bar(x=need_metric, y=[num_val[0],num_val[2]], name='',xaxis="x1",text=need_metric, legendgroup="Male"),
             go.Bar(x=need_metric, y=[num_val[1],num_val[3]], name='',xaxis="x1", text=need_metric, legendgroup="Female"),]
-
-    #fig1.update_layout(barmode='stack',yaxis="y2")
-
     fig2 =[go.Bar(x=need_metric, y=[num_val[4],num_val[6]], name='',xaxis="x2",text=need_metric, legendgroup="Male",),
             go.Bar(x=need_metric, y=[num_val[5],num_val[7]], name='',xaxis="x2", text=need_metric, legendgroup="Female"),]
-
     fig3 =[go.Bar(x=need_metric, y=[num_val[8],num_val[10]], name='Male',xaxis="x3", text=need_metric, legendgroup="Male"),
             go.Bar(x=need_metric, y=[num_val[9],num_val[11]], name='Female',xaxis="x3", text=need_metric, legendgroup="Female"),]
-
-    #fig2.update_layout(barmode='stack')
-    data=fig1; data.extend(fig2); data.extend(fig3)
-    
+    data=fig1; data.extend(fig2); data.extend(fig3)    
     layout = go.Layout(
         barmode='stack',
         xaxis= dict(
@@ -312,17 +297,14 @@ def update_graphs(location,state_waec,school_type):
             anchor= 'x3', 
             title= '2018'
         ),
-    )
-    
+    )   
     fig ={'data':data, 'layout':layout}
-    # Add image
     fig = go.Figure(fig)
-    
     fig.update_layout(
         plot_bgcolor=colors['graph_bg'],
         font=dict(color=colors['text']),
         title=dict(
-            text = f'''<i class="center-block"style="font-size: 12px; color:{colors['text']};">Graph of Total Candidates in {location} and Those That Had'''+
+            text = f'''<i class="center-block" style="font-size: 12px; color:{colors['text']};">Graph of Total Candidates in {location} and Those That Had'''+
                "<br>5 or More Credits Including Maths and English</i>",
             y = 0.9, x=0.5,
             xanchor = 'center'),
@@ -333,23 +315,20 @@ def update_graphs(location,state_waec,school_type):
             sizex=0.30, sizey=0.30,
             xanchor="right", yanchor="bottom")]
     )
-    
     #fig.show()
-    
     return fig
 
 def view_update(location,year,school_type):
+    # Called other functions to update all the three ouputs at the same time
     table_data, summary_txt, state_waec = metric_compute(location,year,school_type)
     fig = None
     fig = update_graphs(location.capitalize(),state_waec, school_type.capitalize())
     if table_data is None:
         raise dash.exceptions.PreventUpdate
     return table_data, fig, summary_txt
-
-
-#----Handling Left portion stuffs
-
-@app.callback(
+    
+# --- The Callbacks------------------------------------------------
+@app.callback( # The left callback
     [dash.dependencies.Output('left_table', 'data'),
     dash.dependencies.Output('l-graph', 'figure'),
     dash.dependencies.Output('l-summary-txt', 'children'),],
@@ -358,9 +337,8 @@ def view_update(location,year,school_type):
     dash.dependencies.Input('left_type', 'value')],)
 def update_left(left_location,left_year,left_type):
     return view_update(left_location,left_year,left_type)
-#----Handling Right portion stuffs
 
-@app.callback(
+@app.callback( # The right callback
     [dash.dependencies.Output('right_table', 'data'),
     dash.dependencies.Output('r-graph', 'figure'),
     dash.dependencies.Output('r-summary-txt', 'children'),],
@@ -369,7 +347,6 @@ def update_left(left_location,left_year,left_type):
     dash.dependencies.Input('right_type', 'value')],)
 def update_right(right_location,right_year,right_type):
     return view_update(right_location,right_year,right_type)
-
-        
+       
 if __name__ == '__main__':
     app.run_server(debug=True)
