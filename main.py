@@ -30,9 +30,9 @@ with open(os.path.join(basedir,'assets','side_bar.html')) as f:
     sidebar_content = f.read()
 #external_stylesheets = ["https://fonts.googleapis.com/icon?family=Material+Icons",
 #                        "https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"]
-app = dash.Dash(__name__,)
+app = dash.Dash(__name__,
                 # external_stylesheets=external_stylesheets,
-                # requests_pathname_prefix='/Waec_Statistics/')
+                requests_pathname_prefix = f'''/{os.path.basename(os.path.dirname(__file__))}/''',)
 app.scripts.config.serve_locally = True
 app.index_string = public_helpers.dashboard_template(page_title='Nigeria WAEC Results Statistics',
                          page_subtitle='<strong>Analyzing 2016 - 2018 Data</strong>',
