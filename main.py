@@ -1,5 +1,5 @@
-import sys, os; from math import isnan #Required In-builts
-#---Third-party---------------
+import os; from math import isnan
+
 import dash, dash_table
 import dash_core_components as dcc
 import dash_html_components as html
@@ -34,33 +34,31 @@ app = dash.Dash(__name__,
                 # external_stylesheets=external_stylesheets,
                 requests_pathname_prefix = f'''/{os.path.basename(os.path.dirname(__file__))}/''',)
 app.scripts.config.serve_locally = True
-app.index_string = public_helpers.dashboard_template(page_title='Nigeria WAEC Results Statistics',
-                         page_subtitle='<strong>Analyzing 2016 - 2018 Data</strong>',
-                         meta_tag='Nigeria WAEC results data visualization',
-                         header_img_path='assets/Equimolar_white_s.png',
-                         header_img_alt='Nigeria Food Prices',
-                         links_to_related_files = '',
-                         generated_advert='',
-                         sidebar_content= sidebar_content,
-                         list_of_recent_visuals='',
-                         )
+app.index_string = public_helpers.dashboard_template(
+                        page_title='Nigeria Waec Results Trend',
+                        page_subtitle='Analysis of the results of previous years across all the states in Nigeria',
+                        meta_tag='Nigeria WAEC results data visualization',
+                        og_image_link='https://www.equimolar.com' + app.get_asset_url('waec_result_graph.png'),
+                        sidebar_content=sidebar_content,
+                        dashboard_external_url='https://www.equimolar.com'+f'''/{os.path.basename(os.path.dirname(__file__))}''',
+                        )
 #---The Dashboard and its Constituence-----------------------------
 
 app.layout = html.Div(
     className="row",
-    children=[        
+    children=[
         #------------- The left side of the screen -----------#
         html.Div(
             className="col-12 col-md-6",
-            style={"border": colors['board_border'],"backgroundColor":colors['board'], 
+            style={"border": colors['board_border'],"backgroundColor":colors['board'],
                 "borderRadius":"20px", "paddingBottom":"20px"},
             children= [
-                
+
                 html.Img(
                     className="col-6 col-xl-5",
                     style={"width":"130px","maxWidth":"100%",
                         "padding":"10px", "borderRadius": "50%","float":"right"},
-                    src=app.get_asset_url("Private Result.jpg")
+                    src=app.get_asset_url("Private Result.JPG")
                 ),
                 html.Div(
                     className="col-6 col-xl-7",
@@ -105,27 +103,27 @@ app.layout = html.Div(
                     ),
                 ),
                 html.Div(#The summary section
-                    className="col-12", 
+                    className="col-12",
                     style={"padding-top":"20px"},
                     children= [
                         dcc.Markdown(id='l-summary-txt'),
                     ],
-                ), 
-            ],    
+                ),
+            ],
         ),
-        
+
         #-------- The right side of the screen-----------#
         html.Div(
             className="col-12 col-sm-6 d-none d-md-block",
             style={"border": colors['board_border'],"backgroundColor":colors['board'], "borderRadius":"20px",
                 "paddingBottom":"20px"},
-                    
+
             children= [
                 html.Img(
                     className="col-6 col-xl-5",
-                    style={"width":"130px","maxWidth":"100%","padding":"10px", 
+                    style={"width":"130px","maxWidth":"100%","padding":"10px",
                         "borderRadius": "50%"},
-                    src=app.get_asset_url("Public Result.jpg")
+                    src=app.get_asset_url("Public Result.JPG")
                 ),
                 html.Div(
                     className="col-6 col-xl-7",
@@ -169,18 +167,18 @@ app.layout = html.Div(
                     ),
                 ),
                 html.Div(#The summary section
-                    className="col-12", 
+                    className="col-12",
                     style={"padding-top":"20px"},
                     children= [
                         dcc.Markdown(id='r-summary-txt'),
                         ],
-                ), 
+                ),
             ],
-        ),  
+        ),
     ],
 )
 
-# --- The functions called within the callbacks -----------------      
+# --- The functions called within the callbacks -----------------
 def data_need(location,year,select_type):
     '''Here, two outputs were generated
     state_waec: The full dataframe for the selected location, consumed by update_graphs
@@ -208,7 +206,7 @@ def metric_compute(location,year,school_type):
     state_waec, state_data = data_need(location,year,school_type)
     #print(state_data)
     if isnan(state_data[0]):
-        return [{tabl_header[0]:metrics[i],tabl_header[1]:'-', 
+        return [{tabl_header[0]:metrics[i],tabl_header[1]:'-',
             tabl_header[2]:'-',tabl_header[3]:'-'} for i in range(len(metrics))]
     state_total_sat=state_data[0]+state_data[1]
     value =[state_data[0],state_data[1],state_total_sat] # initializing the cell value list
@@ -217,7 +215,7 @@ def metric_compute(location,year,school_type):
         figure = int(state_data[i])
         if i%2!=1: # One total value for two consecutive elements
             total = f'''
-                {int(state_data[i]+state_data[i+1])} 
+                {int(state_data[i]+state_data[i+1])}
                 ({(state_data[i]+state_data[i+1])/state_total_sat * 100:.1f}%)
                 '''
             cell_value = f'{figure} ({figure/value[0] * 100:.1f}%)'
@@ -226,7 +224,7 @@ def metric_compute(location,year,school_type):
             cell_value = f'{figure} ({figure/value[1] * 100:.1f}%)'
             value = value+[cell_value]+[total]
     output_data = [{tabl_header[0]:metrics[i],tabl_header[1]:value[i*3],
-        tabl_header[2]:value[i*3+1],tabl_header[3]:value[i*3+2]} 
+        tabl_header[2]:value[i*3+1],tabl_header[3]:value[i*3+2]}
         for i in range(len(metrics))]
     summary_txt = summary_Txt(location.capitalize(),year,school_type.lower(),state_data,value)
 
@@ -241,18 +239,18 @@ def summary_Txt(location,year,school_type,state_data,value):
     summary_txt = dedent(f'''
         #### Summary: {location} | {year} | {school_type.capitalize()} Schools
         ----------------------
-        The West African Examinations Council Results Statistics of **{year}** 
-        for student's in {location} reflected that a total of **{value[2]}** 
-        candidates sat {sat__with} with **{state_data[1]/(state_data[0]+state_data[1]) * 100:.1f}%** female and 
+        The West African Examinations Council Results Statistics of **{year}**
+        for student's in {location} reflected that a total of **{value[2]}**
+        candidates sat {sat__with} with **{state_data[1]/(state_data[0]+state_data[1]) * 100:.1f}%** female and
         **{state_data[0]/(state_data[0]+state_data[1]) * 100:.1f}%** male candidates.
 
 
-        Of the {state_data[0]} male candidates, only **{state_data[-2]/state_data[0] * 100:.1f}%** 
-        of them made 5 credits and above including Mathematics and English Language, 
-        whereas out of the {state_data[1]}, **{state_data[-1]/state_data[1] * 100:.1f}%** 
-        of them made 5 credits and above including Mathematics and English Language.  
-        *Overall, The number of candidates with 5 credits and above 
-        including Mathematics & English Language in {school_type} schools in 
+        Of the {state_data[0]} male candidates, only **{state_data[-2]/state_data[0] * 100:.1f}%**
+        of them made 5 credits and above including Mathematics and English Language,
+        whereas out of the {state_data[1]}, **{state_data[-1]/state_data[1] * 100:.1f}%**
+        of them made 5 credits and above including Mathematics and English Language.
+        *Overall, The number of candidates with 5 credits and above
+        including Mathematics & English Language in {school_type} schools in
         {location}({year})is put at **{value[-1]}**.*
         ''')
 
@@ -262,42 +260,42 @@ def update_graphs(location,state_waec,school_type):
     '''This function concocts the graph'''
     need_metric = ["TOTAL NUMBER SAT", "5 CREDITS & ABOVE INCLUDING MATHEMATICS & ENGLISH LANG."]
     state_waec2=state_waec[
-        (state_waec.METRICS==need_metric[0]) | 
+        (state_waec.METRICS==need_metric[0]) |
         (state_waec.METRICS==need_metric[1])
     ]
     num_val=state_waec2[state_waec2.columns[-1]].to_list()
-    
+
     fig1 =[go.Bar(x=need_metric, y=[num_val[0],num_val[2]], name='',xaxis="x1",text=need_metric, legendgroup="Male"),
             go.Bar(x=need_metric, y=[num_val[1],num_val[3]], name='',xaxis="x1", text=need_metric, legendgroup="Female"),]
     fig2 =[go.Bar(x=need_metric, y=[num_val[4],num_val[6]], name='',xaxis="x2",text=need_metric, legendgroup="Male",),
             go.Bar(x=need_metric, y=[num_val[5],num_val[7]], name='',xaxis="x2", text=need_metric, legendgroup="Female"),]
     fig3 =[go.Bar(x=need_metric, y=[num_val[8],num_val[10]], name='Male',xaxis="x3", text=need_metric, legendgroup="Male"),
             go.Bar(x=need_metric, y=[num_val[9],num_val[11]], name='Female',xaxis="x3", text=need_metric, legendgroup="Female"),]
-    data=fig1; data.extend(fig2); data.extend(fig3)    
+    data=fig1; data.extend(fig2); data.extend(fig3)
     layout = go.Layout(
         barmode='stack',
         xaxis= dict(
             tickvals=need_metric,
             ticktext=['Total..','5 Credits..'],
             domain= [0, 0.33],
-            anchor= 'x1', 
+            anchor= 'x1',
             title= '2016'
         ),
         xaxis2= dict(
             tickvals=need_metric,
             ticktext=['Total..','5 Credits..'],
             domain= [0.33, 0.66],
-            anchor= 'x2', 
+            anchor= 'x2',
             title= '2017'
         ),
         xaxis3= dict(
             tickvals=need_metric,
             ticktext=['Total....','5 Credits..'],
             domain= [0.66, 1],
-            anchor= 'x3', 
+            anchor= 'x3',
             title= '2018'
         ),
-    )   
+    )
     fig ={'data':data, 'layout':layout}
     fig = go.Figure(fig)
     fig.update_layout(
@@ -326,7 +324,7 @@ def view_update(location,year,school_type):
     if table_data is None:
         raise dash.exceptions.PreventUpdate
     return table_data, fig, summary_txt
-    
+
 # --- The Callbacks------------------------------------------------
 @app.callback( # The left callback
     [dash.dependencies.Output('left_table', 'data'),
@@ -347,6 +345,6 @@ def update_left(left_location,left_year,left_type):
     dash.dependencies.Input('right_type', 'value')],)
 def update_right(right_location,right_year,right_type):
     return view_update(right_location,right_year,right_type)
-       
+
 if __name__ == '__main__':
     app.run_server(debug=True)
