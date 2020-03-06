@@ -7,8 +7,10 @@ import pandas as pd
 import plotly.graph_objs as go
 from textwrap import dedent
 #-----------------------------
+folder_name = os.path.dirname(__file__)
+point_path = f'''/{os.path.basename(folder_name)}/'''
 # Getting the base directory ensures that my resources are mobile
-basedir=os.path.abspath(os.path.dirname(__file__))
+basedir=os.path.abspath(folder_name)
 from shared_res import public_helpers as public_helpers
 
 #---Defining The data and its variables-------------------
@@ -23,7 +25,7 @@ locations = waec_data.columns[4:] # the list of all states with the addition ABU
 tabl_header = ["Metric","Male","Female","Total"]
 
 #----Setting the template and its variables------------------------------------------
-colors={'graph_bg' : "white", 'text' : "grey", 'board' : 'grey',
+colors={'graph_bg' : "white", 'text' : "grey", 'board' : '#EDEDED',
         'board_border' : "5px solid white",}
 # Putting the side bar inplace
 with open(os.path.join(basedir,'assets','side_bar.html')) as f:
@@ -32,146 +34,151 @@ with open(os.path.join(basedir,'assets','side_bar.html')) as f:
 #                        "https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"]
 app = dash.Dash(__name__,
                 # external_stylesheets=external_stylesheets,
-                requests_pathname_prefix = f'''/{os.path.basename(os.path.dirname(__file__))}/''',)
+                requests_pathname_prefix = point_path,)
 app.scripts.config.serve_locally = True
 app.index_string = public_helpers.dashboard_template(
                         page_title='Nigeria Waec Results Trend',
                         page_subtitle='Analysis of the results of previous years across all the states in Nigeria',
                         meta_tag='Nigeria WAEC results data visualization',
-                        og_image_link='https://www.equimolar.com' + app.get_asset_url('waec_result_graph.png'),
+                        og_image_link='https://www.equimolar.com' + app.get_asset_url('waec_results_graph.png'),
                         sidebar_content=sidebar_content,
-                        dashboard_external_url='https://www.equimolar.com'+f'''/{os.path.basename(os.path.dirname(__file__))}''',
+                        dashboard_external_url='https://www.equimolar.com'+point_path,
                         )
 #---The Dashboard and its Constituence-----------------------------
 
 app.layout = html.Div(
-    className="row",
+    className="container",
     children=[
-        #------------- The left side of the screen -----------#
         html.Div(
-            className="col-12 col-md-6",
-            style={"border": colors['board_border'],"backgroundColor":colors['board'],
-                "borderRadius":"20px", "paddingBottom":"20px"},
-            children= [
-
-                html.Img(
-                    className="col-6 col-xl-5",
-                    style={"width":"130px","maxWidth":"100%",
-                        "padding":"10px", "borderRadius": "50%","float":"right"},
-                    src=app.get_asset_url("Private Result.JPG")
-                ),
+            className="row",
+            children=[
+                #------------- The left side of the screen -----------#
                 html.Div(
-                    className="col-6 col-xl-7",
-                    style={"padding":"0","paddingTop":"15px"},
+                    className="col-md-6",
+                    style={"border": colors['board_border'],"backgroundColor":colors['board'],
+                        "borderRadius":"20px", "paddingBottom":"20px"},
                     children= [
-                        dcc.Dropdown(
-                            id='left_location',
-                            options=[{'label': f'Location: {i}', 'value': i} for i in locations],
-                            value='NIGERIA'
+
+                        html.Img(
+                            className="col-6 col-xl-5",
+                            style={"width":"130px","maxWidth":"100%",
+                                "padding":"10px", "borderRadius": "50%","float":"right"},
+                            src=app.get_asset_url("Private Result.JPG")
                         ),
-                        dcc.Dropdown(
-                            id='left_type',
-                            options=[{'label': f'School Type: {i}', 'value': i} for i in school_type],
-                            value='PRIVATE'
+                        html.Div(
+                            className="col-6 col-xl-7",
+                            style={"padding":"0","paddingTop":"15px"},
+                            children= [
+                                dcc.Dropdown(
+                                    id='left_location',
+                                    options=[{'label': f'Location: {i}', 'value': i} for i in locations],
+                                    value='NIGERIA'
+                                ),
+                                dcc.Dropdown(
+                                    id='left_type',
+                                    options=[{'label': f'School Type: {i}', 'value': i} for i in school_type],
+                                    value='PRIVATE'
+                                ),
+                                dcc.Dropdown(
+                                    id='left_year',
+                                    options=[{'label': f'Year: {i}', 'value': i} for i in years],
+                                    value= 2018
+                                ),
+                            ],
                         ),
-                        dcc.Dropdown(
-                            id='left_year',
-                            options=[{'label': f'Year: {i}', 'value': i} for i in years],
-                            value= 2018
+                        #----------------------------------------------------------
+                        html.Div(
+                            style={"clear":"both"},
+                            children=[dcc.Graph(id='l-graph')],
+                        ),
+                        html.Div(
+                            style={"clear":"both"},
+                            className="table-responsive",
+                            children= dash_table.DataTable(
+                                id='left_table',
+                                columns=[{"name":i,"id": i,"selectable": True} for i in tabl_header],
+                                style_cell={
+                                    # all three widths are needed
+                                    'height': 'auto',
+                                    'minWidth': '100px', 'width':'100px','maxWidth': '180px',
+                                    'whiteSpace': 'normal'
+                                },
+                                sort_action="native",
+                                page_action="native",
+                            ),
+                        ),
+                        html.Div(#The summary section
+                            className="col-12",
+                            style={"padding-top":"20px"},
+                            children= [
+                                dcc.Markdown(id='l-summary-txt'),
+                            ],
                         ),
                     ],
                 ),
-                #----------------------------------------------------------
-                html.Div(
-                    style={"clear":"both"},
-                    children=[dcc.Graph(id='l-graph')],
-                ),
-                html.Div(
-                    style={"clear":"both"},
-                    className="table-responsive",
-                    children= dash_table.DataTable(
-                        id='left_table',
-                        columns=[{"name":i,"id": i,"selectable": True} for i in tabl_header],
-                        style_cell={
-                            # all three widths are needed
-                            'height': 'auto',
-                            'minWidth': '100px', 'width':'100px','maxWidth': '180px',
-                            'whiteSpace': 'normal'
-                        },
-                        sort_action="native",
-                        page_action="native",
-                    ),
-                ),
-                html.Div(#The summary section
-                    className="col-12",
-                    style={"padding-top":"20px"},
-                    children= [
-                        dcc.Markdown(id='l-summary-txt'),
-                    ],
-                ),
-            ],
-        ),
 
-        #-------- The right side of the screen-----------#
-        html.Div(
-            className="col-12 col-sm-6 d-none d-md-block",
-            style={"border": colors['board_border'],"backgroundColor":colors['board'], "borderRadius":"20px",
-                "paddingBottom":"20px"},
-
-            children= [
-                html.Img(
-                    className="col-6 col-xl-5",
-                    style={"width":"130px","maxWidth":"100%","padding":"10px",
-                        "borderRadius": "50%"},
-                    src=app.get_asset_url("Public Result.JPG")
-                ),
+                #-------- The right side of the screen-----------#
                 html.Div(
-                    className="col-6 col-xl-7",
-                    style={"padding":"0","paddingTop":"15px","float":"right"},
+                    className="col-12 col-sm-6 d-none d-md-block",
+                    style={"border": colors['board_border'],"backgroundColor":colors['board'], "borderRadius":"20px",
+                        "paddingBottom":"20px"},
+
                     children= [
-                        dcc.Dropdown(
-                            id='right_location',
-                            options=[{'label': f'Location: {i}', 'value': i} for i in locations],
-                            value='OGUN'
+                        html.Img(
+                            className="col-6 col-xl-5",
+                            style={"width":"130px","maxWidth":"100%","padding":"10px",
+                                "borderRadius": "50%"},
+                            src=app.get_asset_url("Public Result.JPG")
                         ),
-                        dcc.Dropdown(
-                            id='right_type',
-                            options=[{'label': f'School Type: {i}', 'value': i} for i in school_type],
-                            value='PUBLIC'
+                        html.Div(
+                            className="col-6 col-xl-7",
+                            style={"padding":"0","paddingTop":"15px","float":"right"},
+                            children= [
+                                dcc.Dropdown(
+                                    id='right_location',
+                                    options=[{'label': f'Location: {i}', 'value': i} for i in locations],
+                                    value='OGUN'
+                                ),
+                                dcc.Dropdown(
+                                    id='right_type',
+                                    options=[{'label': f'School Type: {i}', 'value': i} for i in school_type],
+                                    value='PUBLIC'
+                                ),
+                                dcc.Dropdown(
+                                    id='right_year',
+                                    options=[{'label': f'Year: {i}', 'value': i} for i in years],
+                                    value='2018'
+                                ),
+                            ],
                         ),
-                        dcc.Dropdown(
-                            id='right_year',
-                            options=[{'label': f'Year: {i}', 'value': i} for i in years],
-                            value='2018'
+                        #-------------------------------------------------
+                        html.Div(
+                            style={"clear":"both"},
+                            children=[dcc.Graph(id='r-graph')],
+                        ),
+                        html.Div(
+                            className="table-responsive",
+                            children= dash_table.DataTable(
+                                id='right_table',
+                                columns=[{"name":i,"id": i,"selectable": True} for i in tabl_header],
+                                style_cell={
+                                    # all three widths are needed
+                                    'height': 'auto',
+                                    'minWidth': '100px', 'width':'100px','maxWidth': '180px',
+                                    'whiteSpace': 'normal'
+                                },
+                                sort_action="native",
+                                page_action="native",
+                            ),
+                        ),
+                        html.Div(#The summary section
+                            className="col-12",
+                            style={"padding-top":"20px"},
+                            children= [
+                                dcc.Markdown(id='r-summary-txt'),
+                                ],
                         ),
                     ],
-                ),
-                #-------------------------------------------------
-                html.Div(
-                    style={"clear":"both"},
-                    children=[dcc.Graph(id='r-graph')],
-                ),
-                html.Div(
-                    className="table-responsive",
-                    children= dash_table.DataTable(
-                        id='right_table',
-                        columns=[{"name":i,"id": i,"selectable": True} for i in tabl_header],
-                        style_cell={
-                            # all three widths are needed
-                            'height': 'auto',
-                            'minWidth': '100px', 'width':'100px','maxWidth': '180px',
-                            'whiteSpace': 'normal'
-                        },
-                        sort_action="native",
-                        page_action="native",
-                    ),
-                ),
-                html.Div(#The summary section
-                    className="col-12",
-                    style={"padding-top":"20px"},
-                    children= [
-                        dcc.Markdown(id='r-summary-txt'),
-                        ],
                 ),
             ],
         ),
