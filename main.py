@@ -8,7 +8,7 @@ import plotly.graph_objs as go
 from textwrap import dedent
 #-----------------------------
 folder_name = os.path.dirname(__file__)
-point_path = f'''/{os.path.basename(folder_name)}/'''
+point_path = f'''/{os.path.basename(folder_name).lower()}/'''
 # Getting the base directory ensures that my resources are mobile
 basedir=os.path.abspath(folder_name)
 from shared_res import public_helpers as public_helpers
