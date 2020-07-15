@@ -35,11 +35,11 @@ with open(os.path.join(basedir,'assets','side_bar.html')) as f:
 app = dash.Dash(__name__,
                 # external_stylesheets=external_stylesheets,
                 requests_pathname_prefix = point_path,)
-app.scripts.config.serve_locally = True
+app.scripts.config.serve_locally = False
 app.index_string = public_helpers.dashboard_template(
-                        page_title='Nigeria Waec Results Trend',
+                        page_title="Nigeria's Waec Results Trend",
                         page_subtitle='Analysis of the results of previous years across all the states in Nigeria',
-                        meta_tag='Nigeria WAEC results data visualization',
+                        meta_tag="Nigeria's WAEC results data visualization",
                         og_image_link='https://www.equimolar.com' + app.get_asset_url('waec_results_graph.png'),
                         sidebar_content=sidebar_content,
                         dashboard_external_url='https://www.equimolar.com'+point_path,
